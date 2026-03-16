@@ -1,0 +1,9 @@
+[package]
+name = "itf_pattern_analyzer"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.0", features = ["derive"] }
+rstest = "0.26.1"
+validator = { version = "0.20.0", features = ["derive"] }
