@@ -1,14 +1,22 @@
-use std::fmt::Display;
-
 use crate::{
-    direction::{Angle, Rotation},
-    distance::{Margin, Measurement},
+    direction::{Angle, Direction, Foot, Rotation},
+    distance::{Distance, Margin, Measurement},
 };
 
 #[derive(Debug, Clone, Copy)]
-pub struct Foot {
+pub struct FootPosition {
     pub x: f64,
     pub y: f64,
+}
+
+impl FootPosition {
+    pub fn move_x(&mut self, dist: f64) {
+        self.x += dist
+    }
+
+    pub fn move_y(&mut self, dist: f64) {
+        self.y += dist
+    }
 }
 
 #[derive(Debug)]
@@ -21,15 +29,15 @@ pub enum StartPosition {
 
 #[derive(Debug)]
 pub struct Position {
-    angle: f64,
+    pub angle: f64,
     // Offset from (x, y) start.
-    left_foot: Foot,
-    right_foot: Foot,
+    pub left_foot: FootPosition,
+    pub right_foot: FootPosition,
     // body measurements in cm.
-    measurement: Measurement,
+    pub measurement: Measurement,
     // (x, y) start. Depends on start stance.
-    start_left: Foot,
-    start_right: Foot,
+    pub start_left: FootPosition,
+    pub start_right: FootPosition,
 }
 
 /// We are tracking the (x, y) position of the left and right foot respectively.
@@ -65,8 +73,8 @@ impl Position {
             }
         };
 
-        let left_foot = Foot { x: left_x, y: 0.0 };
-        let right_foot = Foot { x: right_x, y: 0.0 };
+        let left_foot = FootPosition { x: left_x, y: 0.0 };
+        let right_foot = FootPosition { x: right_x, y: 0.0 };
 
         Self {
             angle: Angle::Degree90.radians(),
@@ -80,10 +88,39 @@ impl Position {
 }
 
 impl Position {
+    pub fn custom_dist(&self, distance: Distance) -> f64 {
+        match distance {
+            Distance::ShoulderWidth(dist) => dist * self.measurement.shoulder_width,
+            Distance::FootLength(dist) => dist * self.measurement.foot_length,
+            Distance::FootWidth(dist) => dist * self.measurement.foot_width,
+        }
+    }
+
     pub fn rotate(&mut self, rotation: Rotation, angle: Angle) {
         match rotation {
             Rotation::Left => self.angle += angle.radians(),
             Rotation::Right => self.angle -= angle.radians(),
+        }
+    }
+
+    pub fn move_foot(&mut self, foot: Foot, direction: Direction, angle_offset: f64) {
+        match (foot, direction) {
+            (Foot::Left, Direction::X(dist)) => {
+                self.left_foot
+                    .move_x(dist * (self.angle + angle_offset).cos().round());
+            }
+            (Foot::Left, Direction::Y(dist)) => {
+                self.left_foot
+                    .move_y(dist * (self.angle + angle_offset).sin().round());
+            }
+            (Foot::Right, Direction::X(dist)) => {
+                self.right_foot
+                    .move_x(dist * (self.angle + angle_offset).cos().round());
+            }
+            (Foot::Right, Direction::Y(dist)) => {
+                self.right_foot
+                    .move_y(dist * (self.angle + angle_offset).sin().round());
+            }
         }
     }
 
@@ -97,6 +134,8 @@ impl Position {
 
 #[cfg(test)]
 pub mod test {
+    use crate::stance::Stance;
+
     use super::*;
     use rstest::*;
 
@@ -110,14 +149,41 @@ pub mod test {
         assert_eq!(angle.resolve_y(), expected_y);
     }
 
-    // TODO - fix
-    fn test_turn() {
+    fn test_move() {
         let measurement = Measurement {
             shoulder_width: 100.0,
             foot_length: 30.0,
             foot_width: 10.0,
         };
 
-        let mut position = Position::new(measurement, StartPosition::ShoulderWidth);
+        let mut position = Position::new(measurement, StartPosition::NoSpace);
+
+        // 1. step FORWARD in walking stance with left foot.
+        let stance_spec = Stance::GunnunSogi.resolve(&position.measurement);
+
+        let dy = stance_spec.length;
+        let dx = stance_spec.width;
+
+        // measures toe to toe, which is equal to (vertical) middle of foot to middle of foot.
+        position.move_foot(Foot::Left, Direction::Y(dy), Angle::Degree0.radians());
+
+        // We have to account for the already existing 0.5 foot offset.
+        position.move_foot(Foot::Left, Direction::X(dx), Angle::Degree90.radians());
+        position.move_foot(
+            Foot::Left,
+            Direction::X(position.custom_dist(Distance::FootWidth(0.5))),
+            Angle::Degree90.radians(),
+        );
+
+        assert_eq!(
+            position.left_foot.y,
+            1.5 * position.measurement.shoulder_width
+        );
+
+        assert!(position.left_foot.x < 0.0);
+        assert_eq!(
+            position.left_foot.x,
+            -1.0 * position.measurement.shoulder_width + (0.5 * position.measurement.foot_width)
+        )
     }
 }

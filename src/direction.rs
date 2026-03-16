@@ -5,7 +5,18 @@ pub enum Rotation {
     Right,
 }
 
+pub enum Foot {
+    Left,
+    Right,
+}
+
+pub enum Direction {
+    X(f64),
+    Y(f64),
+}
+
 pub enum Angle {
+    Degree0,
     Degree45,
     Degree90,
     Degree180,
@@ -16,6 +27,7 @@ pub enum Angle {
 impl Angle {
     pub fn radians(&self) -> f64 {
         match self {
+            Angle::Degree0 => 0.0,
             Angle::Degree45 => PI / 4.0,
             Angle::Degree90 => PI / 2.0,
             Angle::Degree180 => PI,
