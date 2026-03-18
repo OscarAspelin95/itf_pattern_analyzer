@@ -1,15 +1,19 @@
 use std::f64::consts::PI;
 
 pub enum Rotation {
+    // Anti-clockwise (increasing the angle)
     Left,
+    // Clockwise (decreasing the angle)
     Right,
 }
 
+#[derive(Debug)]
 pub enum Foot {
     Left,
     Right,
 }
 
+#[derive(Debug)]
 pub enum Direction {
     X(f64),
     Y(f64),
@@ -22,6 +26,7 @@ pub enum Angle {
     Degree180,
     Degree270,
     Degree360,
+    DegreeCustom(f64),
 }
 
 impl Angle {
@@ -33,6 +38,7 @@ impl Angle {
             Angle::Degree180 => PI,
             Angle::Degree270 => PI * 3.0 / 2.0,
             Angle::Degree360 => PI * 2.0,
+            Angle::DegreeCustom(custom_angle_degree) => custom_angle_degree * (PI / 180.0),
         }
     }
 
