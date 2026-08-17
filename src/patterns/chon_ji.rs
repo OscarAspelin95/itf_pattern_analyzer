@@ -24,6 +24,12 @@ pub fn analyze_chon_ji(measurement: Measurement) {
 
     step_5(&mut position);
     position.print_feet_position();
+
+    step_6(&mut position);
+    position.print_feet_position();
+
+    step_7(&mut position);
+    position.print_feet_position();
 }
 
 /// Step 1 includes:
@@ -184,6 +190,48 @@ fn step_5(position: &mut Position) {
     position.move_foot(
         Foot::Left,
         Direction::Y(stance.length - stance.width),
+        Angle::Degree0.radians(),
+    );
+}
+
+/// Step 6 includes:
+/// 1 - Step with the right foot to a right walking stance
+///		1.1 - A move in positive y-direction of 1.5 shoulders
+fn step_6(position: &mut Position) {
+    let stance = Stance::GunnunSogi.resolve(&position.measurement);
+
+    // 1 - Step to right walking stance degrees to the left.
+    //	1.1 - We only move in y-direction.
+    position.move_foot(
+        Foot::Right,
+        Direction::Y(stance.length),
+        Angle::Degree0.radians(),
+    );
+}
+
+/// Step 7 includes:
+/// 1 - A 180 degree spot turn on the left foot
+/// 2 - Move right foot to a right walking stance
+///		2.1 - Bla
+/// 	2.2 - Bla
+fn step_7(position: &mut Position) {
+    let stance = Stance::GunnunSogi.resolve(&position.measurement);
+
+    // 1 - 180 degree spot turn
+    position.rotate(Rotation::Right, Angle::Degree180);
+
+    // 2 - Right foot step out to walking stance.
+    // 	2.1 - Move right foot a total of 2 * 1.0 shoulders in x-direction.
+    position.move_foot(
+        Foot::Right,
+        Direction::X(2.0 * stance.width),
+        -Angle::Degree90.radians(),
+    );
+
+    // 	2.2 - Move right foot a total of 2 * 1.5 shoulders in y-direction.
+    position.move_foot(
+        Foot::Right,
+        Direction::Y(2.0 * stance.length),
         Angle::Degree0.radians(),
     );
 }
